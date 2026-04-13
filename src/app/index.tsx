@@ -1,98 +1,403 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { questions } from "../questions";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+export default function App() {
+  const [authScreen, setAuthScreen] = useState<
+    "login" | "register" | "setup" | "app"
+  >("login");
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+  if (authScreen === "login") return <Login setAuthScreen={setAuthScreen} />;
+  if (authScreen === "register")
+    return <Register setAuthScreen={setAuthScreen} />;
+  if (authScreen === "setup") return <Setup setAuthScreen={setAuthScreen} />;
+
+  return <QuizApp />;
+}
+
+function Login({ setAuthScreen }: any) {
+  const { control, handleSubmit } = useForm();
+
+  const onSubmit = () => setAuthScreen("app");
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <View style={styles.container}>
+      <Text style={styles.title}>Login</Text>
+
+      <Controller
+        control={control}
+        name="email"
+        rules={{ required: true }}
+        render={({ field: { onChange, value } }) => (
+          <TextInput
+            placeholder="Email"
+            style={styles.input}
+            onChangeText={onChange}
+            value={value}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="password"
+        rules={{ required: true }}
+        render={({ field: { onChange, value } }) => (
+          <TextInput
+            placeholder="Password"
+            secureTextEntry
+            style={styles.input}
+            onChangeText={onChange}
+            value={value}
+          />
+        )}
+      />
+
+      <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
+        <Text style={styles.btnText}>Login</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => setAuthScreen("register")}>
+        <Text>Go to Register</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
-export default function HomeScreen() {
+function Register({ setAuthScreen }: any) {
+  const { control, handleSubmit, watch } = useForm();
+  const password = watch("password");
+
+  const onSubmit = () => setAuthScreen("setup");
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <View style={styles.container}>
+      <Text style={styles.title}>Register</Text>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+      <Controller
+        control={control}
+        name="email"
+        rules={{ required: true }}
+        render={({ field: { onChange, value } }) => (
+          <TextInput
+            placeholder="Email"
+            style={styles.input}
+            onChangeText={onChange}
+            value={value}
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        )}
+      />
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <Controller
+        control={control}
+        name="password"
+        rules={{ required: true }}
+        render={({ field: { onChange, value } }) => (
+          <TextInput
+            placeholder="Password"
+            secureTextEntry
+            style={styles.input}
+            onChangeText={onChange}
+            value={value}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="confirm"
+        rules={{
+          validate: (value) => value === password,
+        }}
+        render={({ field: { onChange, value } }) => (
+          <TextInput
+            placeholder="Confirm Password"
+            secureTextEntry
+            style={styles.input}
+            onChangeText={onChange}
+            value={value}
+          />
+        )}
+      />
+
+      <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
+        <Text style={styles.btnText}>Register</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function Setup({ setAuthScreen }: any) {
+  const { control, handleSubmit } = useForm();
+
+  const onSubmit = () => setAuthScreen("app");
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Setup Account</Text>
+
+      <Controller
+        control={control}
+        name="firstName"
+        rules={{ required: true }}
+        render={({ field: { onChange, value } }) => (
+          <TextInput
+            placeholder="First Name"
+            style={styles.input}
+            onChangeText={onChange}
+            value={value}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="lastName"
+        rules={{ required: true }}
+        render={({ field: { onChange, value } }) => (
+          <TextInput
+            placeholder="Last Name"
+            style={styles.input}
+            onChangeText={onChange}
+            value={value}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="photo"
+        render={({ field: { onChange, value } }) => (
+          <TextInput
+            placeholder="Profile Photo URL"
+            style={styles.input}
+            onChangeText={onChange}
+            value={value}
+          />
+        )}
+      />
+
+      <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
+        <Text style={styles.btnText}>Finish Setup</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function QuizApp() {
+  const [screen, setScreen] = useState<"home" | "quiz" | "result">("home");
+  const [index, setIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [score, setScore] = useState(0);
+  const [highScore, setHighScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(90);
+  const [showAnswer, setShowAnswer] = useState(false);
+
+  const current = questions[index];
+
+  const selectAnswer = (choice: string) => {
+    setAnswers({ ...answers, [current.id]: choice });
+    setShowAnswer(true);
+  };
+
+  const next = () => {
+    if (index < questions.length - 1) {
+      setIndex(index + 1);
+      setTimeLeft(90);
+      setShowAnswer(false);
+    } else {
+      calculateScore();
+      setScreen("result");
+    }
+  };
+
+  const previous = () => {
+    if (index > 0) {
+      setIndex(index - 1);
+      setTimeLeft(90);
+      setShowAnswer(false);
+    }
+  };
+
+  const calculateScore = useCallback(() => {
+    let s = 0;
+    questions.forEach((q) => {
+      if (answers[q.id] === q.answer) s++;
+    });
+    setScore(s);
+    if (s > highScore) setHighScore(s);
+  }, [answers, highScore]);
+
+  const startQuiz = () => {
+    setIndex(0);
+    setAnswers({});
+    setScore(0);
+    setTimeLeft(90);
+    setShowAnswer(false);
+    setScreen("quiz");
+  };
+
+  useEffect(() => {
+    if (screen !== "quiz") return;
+
+    if (timeLeft === 0) {
+      if (index < questions.length - 1) {
+        setIndex(index + 1);
+        setTimeLeft(90);
+        setShowAnswer(false);
+      } else {
+        calculateScore();
+        setScreen("result");
+      }
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [timeLeft, screen, index, calculateScore]);
+
+  if (screen === "home") {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>📘 Quiz App</Text>
+        <TouchableOpacity style={styles.button} onPress={startQuiz}>
+          <Text style={styles.btnText}>Start Quiz</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (screen === "result") {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Results</Text>
+        <Text style={styles.scoreText}>Your Score: {score}</Text>
+        <Text style={styles.scoreText}>Highest Score: {highScore}</Text>
+        <TouchableOpacity style={styles.button} onPress={startQuiz}>
+          <Text style={styles.btnText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.progress}>
+        Question {index + 1} / {questions.length}
+      </Text>
+
+      <Text style={{ fontSize: 16, color: "red", marginBottom: 10 }}>
+        Time Left: {Math.floor(timeLeft / 60)}:
+        {(timeLeft % 60).toString().padStart(2, "0")}
+      </Text>
+
+      <Text style={styles.question}>{current.question}</Text>
+
+      {Object.keys(current.choices).map((key) => (
+        <TouchableOpacity
+          key={key}
+          style={[
+            styles.choice,
+            showAnswer &&
+              key === current.answer && { backgroundColor: "#A5D6A7" },
+            showAnswer &&
+              answers[current.id] === key &&
+              key !== current.answer && { backgroundColor: "#EF9A9A" },
+          ]}
+          onPress={() => selectAnswer(key)}
+        >
+          <Text style={styles.choiceText}>
+            {key}. {current.choices[key as keyof typeof current.choices]}
+          </Text>
+        </TouchableOpacity>
+      ))}
+
+      {showAnswer && (
+        <Text style={{ marginTop: 10, color: "green" }}>
+          Correct Answer: {current.answer}
+        </Text>
+      )}
+
+      <View style={styles.row}>
+        <TouchableOpacity style={styles.smallBtn} onPress={previous}>
+          <Text style={styles.smallBtnText}>Previous</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.smallBtn} onPress={next}>
+          <Text style={styles.smallBtnText}>
+            {index === questions.length - 1 ? "Finish" : "Next"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    backgroundColor: "#F4F7FB",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
   },
   title: {
-    textAlign: 'center',
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#1A237E",
+    marginBottom: 30,
   },
-  code: {
-    textTransform: 'uppercase',
+  progress: { fontSize: 14, color: "#5C6BC0", marginBottom: 10 },
+  question: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#0D47A1",
+    marginBottom: 20,
+    textAlign: "center",
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  choice: {
+    padding: 14,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    width: "100%",
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: "#BBDEFB",
+  },
+  choiceText: { fontSize: 16, color: "#1A237E" },
+  button: {
+    backgroundColor: "#1976D2",
+    paddingVertical: 14,
+    paddingHorizontal: 50,
+    borderRadius: 30,
+  },
+  btnText: { color: "#FFFFFF", fontSize: 18, fontWeight: "bold" },
+  row: { flexDirection: "row", marginTop: 25, width: "100%" },
+  smallBtn: {
+    flex: 1,
+    backgroundColor: "#E3F2FD",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginHorizontal: 10,
+  },
+  smallBtnText: { fontSize: 16, fontWeight: "600", color: "#0D47A1" },
+  scoreText: { fontSize: 20, color: "#1A237E", marginVertical: 8 },
+  input: {
+    borderWidth: 1,
+    padding: 10,
+    marginVertical: 8,
+    width: "100%",
+    borderRadius: 5,
   },
 });
