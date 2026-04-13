@@ -17,6 +17,9 @@ import { questions } from "../questions";
 
 WebBrowser.maybeCompleteAuthSession();
 
+const isGoogleOAuthConfigured =
+  googleWebClientId && googleWebClientId !== "YOUR_GOOGLE_WEB_CLIENT_ID";
+
 export default function App() {
   return (
     <AuthProvider>
@@ -69,7 +72,7 @@ function Login({ setAuthScreen }: any) {
   const [loginError, setLoginError] = useState("");
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: googleWebClientId,
+    clientId: isGoogleOAuthConfigured ? googleWebClientId : "placeholder",
     scopes: ["profile", "email"],
   });
 
@@ -143,13 +146,15 @@ function Login({ setAuthScreen }: any) {
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[themeStyles.googleButton]}
-        onPress={() => promptAsync()}
-        disabled={!request || loading}
-      >
-        <Text style={[themeStyles.googleButtonText]}>🔐 Login with Google</Text>
-      </TouchableOpacity>
+      {isGoogleOAuthConfigured && (
+        <TouchableOpacity
+          style={[themeStyles.googleButton]}
+          onPress={() => promptAsync()}
+          disabled={!request || loading}
+        >
+          <Text style={[themeStyles.googleButtonText]}>🔐 Login with Google</Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity onPress={() => setAuthScreen("register")}>
         <Text style={{ color: colors.title, marginTop: 20 }}>
@@ -169,7 +174,7 @@ function Register({ setAuthScreen }: any) {
   const [registerError, setRegisterError] = useState("");
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: googleWebClientId,
+    clientId: isGoogleOAuthConfigured ? googleWebClientId : "placeholder",
     scopes: ["profile", "email"],
   });
 
@@ -257,15 +262,17 @@ function Register({ setAuthScreen }: any) {
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[themeStyles.googleButton]}
-        onPress={() => promptAsync()}
-        disabled={!request || loading}
-      >
-        <Text style={[themeStyles.googleButtonText]}>
-          🔐 Sign Up with Google
-        </Text>
-      </TouchableOpacity>
+      {isGoogleOAuthConfigured && (
+        <TouchableOpacity
+          style={[themeStyles.googleButton]}
+          onPress={() => promptAsync()}
+          disabled={!request || loading}
+        >
+          <Text style={[themeStyles.googleButtonText]}>
+            🔐 Sign Up with Google
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity onPress={() => setAuthScreen("login")}>
         <Text style={{ color: colors.title, marginTop: 20 }}>
