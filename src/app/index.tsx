@@ -8,8 +8,17 @@ import {
   View,
 } from "react-native";
 import { questions } from "../questions";
+import { ThemeProvider, useTheme } from "../context/ThemeContext";
 
 export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
+function AppContent() {
   const [authScreen, setAuthScreen] = useState<
     "login" | "register" | "setup" | "app"
   >("login");
@@ -192,6 +201,7 @@ function Setup({ setAuthScreen }: any) {
 }
 
 function QuizApp() {
+  const { colors, toggleTheme } = useTheme();
   const [screen, setScreen] = useState<"home" | "quiz" | "result">("home");
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -266,12 +276,20 @@ function QuizApp() {
     return () => clearInterval(timer);
   }, [timeLeft, screen, index, calculateScore]);
 
+  const themeStyles = getThemedStyles(colors);
+
   if (screen === "home") {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>📘 Quiz App</Text>
-        <TouchableOpacity style={styles.button} onPress={startQuiz}>
-          <Text style={styles.btnText}>Start Quiz</Text>
+      <View style={[themeStyles.container]}>
+        <Text style={[themeStyles.title]}>📘 Quiz App</Text>
+        <TouchableOpacity style={[themeStyles.button]} onPress={startQuiz}>
+          <Text style={[themeStyles.btnText]}>Start Quiz</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[themeStyles.themeToggleBtn]}
+          onPress={toggleTheme}
+        >
+          <Text style={[themeStyles.themeToggleBtnText]}>🌙 Toggle Theme</Text>
         </TouchableOpacity>
       </View>
     );
@@ -279,68 +297,205 @@ function QuizApp() {
 
   if (screen === "result") {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Results</Text>
-        <Text style={styles.scoreText}>Your Score: {score}</Text>
-        <Text style={styles.scoreText}>Highest Score: {highScore}</Text>
-        <TouchableOpacity style={styles.button} onPress={startQuiz}>
-          <Text style={styles.btnText}>Try Again</Text>
+      <View style={[themeStyles.container]}>
+        <Text style={[themeStyles.title]}>Results</Text>
+        <Text style={[themeStyles.scoreText]}>Your Score: {score}</Text>
+        <Text style={[themeStyles.scoreText]}>Highest Score: {highScore}</Text>
+        <TouchableOpacity style={[themeStyles.button]} onPress={startQuiz}>
+          <Text style={[themeStyles.btnText]}>Try Again</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[themeStyles.themeToggleBtn]}
+          onPress={toggleTheme}
+        >
+          <Text style={[themeStyles.themeToggleBtnText]}>🌙 Toggle Theme</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.progress}>
-        Question {index + 1} / {questions.length}
-      </Text>
+    <View style={[themeStyles.container]}>
+      <View style={themeStyles.headerRow}>
+        <View>
+          <Text style={[themeStyles.progress]}>
+            Question {index + 1} / {questions.length}
+          </Text>
+        </View>
+        <TouchableOpacity onPress={toggleTheme}>
+          <Text style={themeStyles.themeToggleBtnSmall}>🌙</Text>
+        </TouchableOpacity>
+      </View>
 
-      <Text style={{ fontSize: 16, color: "red", marginBottom: 10 }}>
+      <Text style={[themeStyles.timeLeft]}>
         Time Left: {Math.floor(timeLeft / 60)}:
         {(timeLeft % 60).toString().padStart(2, "0")}
       </Text>
 
-      <Text style={styles.question}>{current.question}</Text>
+      <Text style={[themeStyles.question]}>{current.question}</Text>
 
       {Object.keys(current.choices).map((key) => (
         <TouchableOpacity
           key={key}
           style={[
-            styles.choice,
+            themeStyles.choice,
             showAnswer &&
-              key === current.answer && { backgroundColor: "#A5D6A7" },
+              key === current.answer && {
+                backgroundColor: colors.correct,
+              },
             showAnswer &&
               answers[current.id] === key &&
-              key !== current.answer && { backgroundColor: "#EF9A9A" },
+              key !== current.answer && {
+                backgroundColor: colors.incorrect,
+              },
           ]}
           onPress={() => selectAnswer(key)}
         >
-          <Text style={styles.choiceText}>
+          <Text style={[themeStyles.choiceText]}>
             {key}. {current.choices[key as keyof typeof current.choices]}
           </Text>
         </TouchableOpacity>
       ))}
 
       {showAnswer && (
-        <Text style={{ marginTop: 10, color: "green" }}>
+        <Text style={[themeStyles.correctAnswer]}>
           Correct Answer: {current.answer}
         </Text>
       )}
 
-      <View style={styles.row}>
-        <TouchableOpacity style={styles.smallBtn} onPress={previous}>
-          <Text style={styles.smallBtnText}>Previous</Text>
+      <View style={themeStyles.row}>
+        <TouchableOpacity style={[themeStyles.smallBtn]} onPress={previous}>
+          <Text style={[themeStyles.smallBtnText]}>Previous</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.smallBtn} onPress={next}>
-          <Text style={styles.smallBtnText}>
+        <TouchableOpacity style={[themeStyles.smallBtn]} onPress={next}>
+          <Text style={[themeStyles.smallBtnText]}>
             {index === questions.length - 1 ? "Finish" : "Next"}
           </Text>
         </TouchableOpacity>
       </View>
     </View>
   );
+}
+
+function getThemedStyles(colors: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 20,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: "bold",
+      color: colors.title,
+      marginBottom: 30,
+    },
+    progress: {
+      fontSize: 14,
+      color: colors.text,
+      marginBottom: 10,
+    },
+    question: {
+      fontSize: 20,
+      fontWeight: "600",
+      color: colors.title,
+      marginBottom: 20,
+      textAlign: "center",
+    },
+    choice: {
+      padding: 14,
+      backgroundColor: colors.input,
+      borderRadius: 10,
+      width: "100%",
+      marginVertical: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    choiceText: {
+      fontSize: 16,
+      color: colors.inputText,
+    },
+    button: {
+      backgroundColor: colors.button,
+      paddingVertical: 14,
+      paddingHorizontal: 50,
+      borderRadius: 30,
+    },
+    btnText: {
+      color: colors.buttonText,
+      fontSize: 18,
+      fontWeight: "bold",
+    },
+    row: {
+      flexDirection: "row",
+      marginTop: 25,
+      width: "100%",
+    },
+    smallBtn: {
+      flex: 1,
+      backgroundColor: colors.input,
+      padding: 12,
+      borderRadius: 10,
+      alignItems: "center",
+      marginHorizontal: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    smallBtnText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.title,
+    },
+    scoreText: {
+      fontSize: 20,
+      color: colors.text,
+      marginVertical: 8,
+    },
+    input: {
+      borderWidth: 1,
+      padding: 10,
+      marginVertical: 8,
+      width: "100%",
+      borderRadius: 5,
+      borderColor: colors.border,
+      color: colors.inputText,
+    },
+    themeToggleBtn: {
+      marginTop: 20,
+      backgroundColor: colors.button,
+      padding: 10,
+      borderRadius: 20,
+      paddingHorizontal: 20,
+    },
+    themeToggleBtnText: {
+      color: colors.buttonText,
+      fontSize: 16,
+      fontWeight: "600",
+    },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      width: "100%",
+      marginBottom: 10,
+    },
+    themeToggleBtnSmall: {
+      fontSize: 24,
+    },
+    timeLeft: {
+      fontSize: 16,
+      color: colors.text,
+      marginBottom: 10,
+    },
+    correctAnswer: {
+      marginTop: 10,
+      color: colors.correct,
+      fontWeight: "600",
+    },
+  });
 }
 
 const styles = StyleSheet.create({
