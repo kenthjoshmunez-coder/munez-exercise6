@@ -6,195 +6,367 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
-import { questions } from "../questions";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
+import { AuthProvider, useAuth } from "../context/AuthContext";
+import { questions } from "../questions";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+import { googleWebClientId } from "../config/firebaseConfig";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 
 function AppContent() {
+  const { user, loading } = useAuth();
   const [authScreen, setAuthScreen] = useState<
     "login" | "register" | "setup" | "app"
   >("login");
 
-  if (authScreen === "login") return <Login setAuthScreen={setAuthScreen} />;
-  if (authScreen === "register")
-    return <Register setAuthScreen={setAuthScreen} />;
-  if (authScreen === "setup") return <Setup setAuthScreen={setAuthScreen} />;
+  useEffect(() => {
+    if (user && !user.displayName) {
+      setAuthScreen("setup");
+    } else if (user) {
+      setAuthScreen("app");
+    }
+  }, [user]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!user) {
+    if (authScreen === "login") return <Login setAuthScreen={setAuthScreen} />;
+    if (authScreen === "register")
+      return <Register setAuthScreen={setAuthScreen} />;
+  }
+
+  if (user && authScreen === "setup")
+    return <Setup setAuthScreen={setAuthScreen} />;
 
   return <QuizApp />;
 }
 
 function Login({ setAuthScreen }: any) {
-  const { control, handleSubmit } = useForm();
+  const { loginWithEmail, error, loading } = useAuth();
+  const { colors } = useTheme();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
 
-  const onSubmit = () => setAuthScreen("app");
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: googleWebClientId,
+    scopes: ["profile", "email"],
+  });
+
+  useEffect(() => {
+    if (response?.type === "success") {
+      const { id_token } = response.params;
+      Alert.alert(
+        "Google Sign-In",
+        "Google Sign-In integration requires Firebase configuration. Please set up Google OAuth in your Firebase console and configure the Web Client ID."
+      );
+    }
+  }, [response]);
+
+  const handleEmailLogin = async () => {
+    if (!email || !password) {
+      setLoginError("Please fill in all fields");
+      return;
+    }
+    try {
+      setLoginError("");
+      await loginWithEmail(email, password);
+    } catch (err: any) {
+      setLoginError(err.message || "Login failed");
+    }
+  };
+
+  const themeStyles = getThemedStyles(colors);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+    <View style={[themeStyles.container]}>
+      <Text style={[themeStyles.title]}>Login</Text>
 
-      <Controller
-        control={control}
-        name="email"
-        rules={{ required: true }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            placeholder="Email"
-            style={styles.input}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
+      {(loginError || error) && (
+        <Text
+          style={[
+            themeStyles.errorText,
+            { color: colors.incorrect, marginBottom: 10 },
+          ]}
+        >
+          {loginError || error}
+        </Text>
+      )}
+
+      <TextInput
+        placeholder="Email"
+        style={[themeStyles.input]}
+        placeholderTextColor={colors.placeholder}
+        onChangeText={setEmail}
+        value={email}
+        editable={!loading}
       />
 
-      <Controller
-        control={control}
-        name="password"
-        rules={{ required: true }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            placeholder="Password"
-            secureTextEntry
-            style={styles.input}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
+      <TextInput
+        placeholder="Password"
+        secureTextEntry
+        style={[themeStyles.input]}
+        placeholderTextColor={colors.placeholder}
+        onChangeText={setPassword}
+        value={password}
+        editable={!loading}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
-        <Text style={styles.btnText}>Login</Text>
+      <TouchableOpacity
+        style={[themeStyles.button, loading && { opacity: 0.6 }]}
+        onPress={handleEmailLogin}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.buttonText} />
+        ) : (
+          <Text style={[themeStyles.btnText]}>Login</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[themeStyles.googleButton]}
+        onPress={() => promptAsync()}
+        disabled={!request || loading}
+      >
+        <Text style={[themeStyles.googleButtonText]}>🔐 Login with Google</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => setAuthScreen("register")}>
-        <Text>Go to Register</Text>
+        <Text style={{ color: colors.title, marginTop: 20 }}>
+          No account? Go to Register
+        </Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 function Register({ setAuthScreen }: any) {
-  const { control, handleSubmit, watch } = useForm();
-  const password = watch("password");
+  const { registerWithEmail, error, loading } = useAuth();
+  const { colors } = useTheme();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [registerError, setRegisterError] = useState("");
 
-  const onSubmit = () => setAuthScreen("setup");
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: googleWebClientId,
+    scopes: ["profile", "email"],
+  });
+
+  useEffect(() => {
+    if (response?.type === "success") {
+      Alert.alert(
+        "Google Sign-Up",
+        "Google Sign-In integration requires Firebase configuration. Please set up Google OAuth."
+      );
+    }
+  }, [response]);
+
+  const handleRegister = async () => {
+    if (!email || !password || !confirm) {
+      setRegisterError("Please fill in all fields");
+      return;
+    }
+    if (password !== confirm) {
+      setRegisterError("Passwords do not match");
+      return;
+    }
+    try {
+      setRegisterError("");
+      await registerWithEmail(email, password);
+    } catch (err: any) {
+      setRegisterError(err.message || "Registration failed");
+    }
+  };
+
+  const themeStyles = getThemedStyles(colors);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Register</Text>
+    <View style={[themeStyles.container]}>
+      <Text style={[themeStyles.title]}>Register</Text>
 
-      <Controller
-        control={control}
-        name="email"
-        rules={{ required: true }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            placeholder="Email"
-            style={styles.input}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
+      {(registerError || error) && (
+        <Text
+          style={[
+            themeStyles.errorText,
+            { color: colors.incorrect, marginBottom: 10 },
+          ]}
+        >
+          {registerError || error}
+        </Text>
+      )}
+
+      <TextInput
+        placeholder="Email"
+        style={[themeStyles.input]}
+        placeholderTextColor={colors.placeholder}
+        onChangeText={setEmail}
+        value={email}
+        editable={!loading}
       />
 
-      <Controller
-        control={control}
-        name="password"
-        rules={{ required: true }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            placeholder="Password"
-            secureTextEntry
-            style={styles.input}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
+      <TextInput
+        placeholder="Password"
+        secureTextEntry
+        style={[themeStyles.input]}
+        placeholderTextColor={colors.placeholder}
+        onChangeText={setPassword}
+        value={password}
+        editable={!loading}
       />
 
-      <Controller
-        control={control}
-        name="confirm"
-        rules={{
-          validate: (value) => value === password,
-        }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            placeholder="Confirm Password"
-            secureTextEntry
-            style={styles.input}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
+      <TextInput
+        placeholder="Confirm Password"
+        secureTextEntry
+        style={[themeStyles.input]}
+        placeholderTextColor={colors.placeholder}
+        onChangeText={setConfirm}
+        value={confirm}
+        editable={!loading}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
-        <Text style={styles.btnText}>Register</Text>
+      <TouchableOpacity
+        style={[themeStyles.button, loading && { opacity: 0.6 }]}
+        onPress={handleRegister}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.buttonText} />
+        ) : (
+          <Text style={[themeStyles.btnText]}>Register</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[themeStyles.googleButton]}
+        onPress={() => promptAsync()}
+        disabled={!request || loading}
+      >
+        <Text style={[themeStyles.googleButtonText]}>🔐 Sign Up with Google</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => setAuthScreen("login")}>
+        <Text style={{ color: colors.title, marginTop: 20 }}>
+          Already have an account? Go to Login
+        </Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 function Setup({ setAuthScreen }: any) {
-  const { control, handleSubmit } = useForm();
+  const { user, saveUserProfile, error, loading: authLoading } = useAuth();
+  const { colors } = useTheme();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [photoURL, setPhotoURL] = useState("");
+  const [setupError, setSetupError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = () => setAuthScreen("app");
+  const handleSetup = async () => {
+    if (!firstName || !lastName) {
+      setSetupError("Please fill in first and last name");
+      return;
+    }
+    if (!user) {
+      setSetupError("User not authenticated");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setSetupError("");
+      await saveUserProfile({
+        firstName,
+        lastName,
+        photoURL: photoURL || undefined,
+        email: user.email || "",
+        uid: user.uid,
+      });
+      setAuthScreen("app");
+    } catch (err: any) {
+      setSetupError(err.message || "Failed to save profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const themeStyles = getThemedStyles(colors);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Setup Account</Text>
+    <View style={[themeStyles.container]}>
+      <Text style={[themeStyles.title]}>Setup Account</Text>
 
-      <Controller
-        control={control}
-        name="firstName"
-        rules={{ required: true }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            placeholder="First Name"
-            style={styles.input}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
+      {(setupError || error) && (
+        <Text
+          style={[
+            themeStyles.errorText,
+            { color: colors.incorrect, marginBottom: 10 },
+          ]}
+        >
+          {setupError || error}
+        </Text>
+      )}
+
+      <TextInput
+        placeholder="First Name"
+        style={[themeStyles.input]}
+        placeholderTextColor={colors.placeholder}
+        onChangeText={setFirstName}
+        value={firstName}
+        editable={!loading && !authLoading}
       />
 
-      <Controller
-        control={control}
-        name="lastName"
-        rules={{ required: true }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            placeholder="Last Name"
-            style={styles.input}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
+      <TextInput
+        placeholder="Last Name"
+        style={[themeStyles.input]}
+        placeholderTextColor={colors.placeholder}
+        onChangeText={setLastName}
+        value={lastName}
+        editable={!loading && !authLoading}
       />
 
-      <Controller
-        control={control}
-        name="photo"
-        render={({ field: { onChange, value } }) => (
-          <TextInput
-            placeholder="Profile Photo URL"
-            style={styles.input}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
+      <TextInput
+        placeholder="Profile Photo URL (optional)"
+        style={[themeStyles.input]}
+        placeholderTextColor={colors.placeholder}
+        onChangeText={setPhotoURL}
+        value={photoURL}
+        editable={!loading && !authLoading}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
-        <Text style={styles.btnText}>Finish Setup</Text>
+      <TouchableOpacity
+        style={[themeStyles.button, (loading || authLoading) && { opacity: 0.6 }]}
+        onPress={handleSetup}
+        disabled={loading || authLoading}
+      >
+        {loading || authLoading ? (
+          <ActivityIndicator color={colors.buttonText} />
+        ) : (
+          <Text style={[themeStyles.btnText]}>Finish Setup</Text>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -202,6 +374,7 @@ function Setup({ setAuthScreen }: any) {
 
 function QuizApp() {
   const { colors, toggleTheme } = useTheme();
+  const { logout } = useAuth();
   const [screen, setScreen] = useState<"home" | "quiz" | "result">("home");
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -291,6 +464,22 @@ function QuizApp() {
         >
           <Text style={[themeStyles.themeToggleBtnText]}>🌙 Toggle Theme</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            themeStyles.button,
+            {
+              marginTop: 15,
+              backgroundColor: colors.incorrect,
+              paddingVertical: 10,
+              paddingHorizontal: 30,
+            },
+          ]}
+          onPress={() => {
+            logout().catch(console.error);
+          }}
+        >
+          <Text style={[themeStyles.btnText]}>Logout</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -309,6 +498,22 @@ function QuizApp() {
           onPress={toggleTheme}
         >
           <Text style={[themeStyles.themeToggleBtnText]}>🌙 Toggle Theme</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            themeStyles.button,
+            {
+              marginTop: 15,
+              backgroundColor: colors.incorrect,
+              paddingVertical: 10,
+              paddingHorizontal: 30,
+            },
+          ]}
+          onPress={() => {
+            logout().catch(console.error);
+          }}
+        >
+          <Text style={[themeStyles.btnText]}>Logout</Text>
         </TouchableOpacity>
       </View>
     );
@@ -462,6 +667,27 @@ function getThemedStyles(colors: any) {
       borderRadius: 5,
       borderColor: colors.border,
       color: colors.inputText,
+    },
+    googleButton: {
+      marginTop: 12,
+      backgroundColor: colors.input,
+      paddingVertical: 12,
+      paddingHorizontal: 30,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      width: "100%",
+      alignItems: "center",
+    },
+    googleButtonText: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: colors.title,
+    },
+    errorText: {
+      fontSize: 14,
+      marginBottom: 10,
+      textAlign: "center",
     },
     themeToggleBtn: {
       marginTop: 20,
