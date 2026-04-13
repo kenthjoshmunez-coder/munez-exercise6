@@ -1,20 +1,19 @@
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
 import { useCallback, useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
 import {
+  ActivityIndicator,
+  Alert,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
-  Alert,
 } from "react-native";
-import { ThemeProvider, useTheme } from "../context/ThemeContext";
-import { AuthProvider, useAuth } from "../context/AuthContext";
-import { questions } from "../questions";
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
 import { googleWebClientId } from "../config/firebaseConfig";
+import { AuthProvider, useAuth } from "../context/AuthContext";
+import { ThemeProvider, useTheme } from "../context/ThemeContext";
+import { questions } from "../questions";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -76,10 +75,9 @@ function Login({ setAuthScreen }: any) {
 
   useEffect(() => {
     if (response?.type === "success") {
-      const { id_token } = response.params;
       Alert.alert(
         "Google Sign-In",
-        "Google Sign-In integration requires Firebase configuration. Please set up Google OAuth in your Firebase console and configure the Web Client ID."
+        "Google Sign-In integration requires Firebase configuration. Please set up Google OAuth in your Firebase console and configure the Web Client ID.",
       );
     }
   }, [response]);
@@ -179,7 +177,7 @@ function Register({ setAuthScreen }: any) {
     if (response?.type === "success") {
       Alert.alert(
         "Google Sign-Up",
-        "Google Sign-In integration requires Firebase configuration. Please set up Google OAuth."
+        "Google Sign-In integration requires Firebase configuration. Please set up Google OAuth.",
       );
     }
   }, [response]);
@@ -264,7 +262,9 @@ function Register({ setAuthScreen }: any) {
         onPress={() => promptAsync()}
         disabled={!request || loading}
       >
-        <Text style={[themeStyles.googleButtonText]}>🔐 Sign Up with Google</Text>
+        <Text style={[themeStyles.googleButtonText]}>
+          🔐 Sign Up with Google
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => setAuthScreen("login")}>
@@ -358,7 +358,10 @@ function Setup({ setAuthScreen }: any) {
       />
 
       <TouchableOpacity
-        style={[themeStyles.button, (loading || authLoading) && { opacity: 0.6 }]}
+        style={[
+          themeStyles.button,
+          (loading || authLoading) && { opacity: 0.6 },
+        ]}
         onPress={handleSetup}
         disabled={loading || authLoading}
       >
@@ -723,62 +726,3 @@ function getThemedStyles(colors: any) {
     },
   });
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F4F7FB",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#1A237E",
-    marginBottom: 30,
-  },
-  progress: { fontSize: 14, color: "#5C6BC0", marginBottom: 10 },
-  question: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#0D47A1",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  choice: {
-    padding: 14,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 10,
-    width: "100%",
-    marginVertical: 8,
-    borderWidth: 1,
-    borderColor: "#BBDEFB",
-  },
-  choiceText: { fontSize: 16, color: "#1A237E" },
-  button: {
-    backgroundColor: "#1976D2",
-    paddingVertical: 14,
-    paddingHorizontal: 50,
-    borderRadius: 30,
-  },
-  btnText: { color: "#FFFFFF", fontSize: 18, fontWeight: "bold" },
-  row: { flexDirection: "row", marginTop: 25, width: "100%" },
-  smallBtn: {
-    flex: 1,
-    backgroundColor: "#E3F2FD",
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginHorizontal: 10,
-  },
-  smallBtnText: { fontSize: 16, fontWeight: "600", color: "#0D47A1" },
-  scoreText: { fontSize: 20, color: "#1A237E", marginVertical: 8 },
-  input: {
-    borderWidth: 1,
-    padding: 10,
-    marginVertical: 8,
-    width: "100%",
-    borderRadius: 5,
-  },
-});

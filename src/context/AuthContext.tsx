@@ -1,16 +1,15 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
 import { initializeApp } from "firebase/app";
 import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  User,
-  AuthError,
+    AuthError,
+    createUserWithEmailAndPassword,
+    getAuth,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    signOut,
+    User,
 } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { firebaseConfig } from "../config/firebaseConfig";
 
 // Initialize Firebase
@@ -19,10 +18,7 @@ let auth: any;
 let db: any;
 
 try {
-  if (
-    firebaseConfig.apiKey &&
-    firebaseConfig.apiKey !== "YOUR_API_KEY"
-  ) {
+  if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
@@ -90,7 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null);
       if (!auth) throw new Error("Firebase not configured");
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const result = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
       setUser(result.user);
     } catch (err: any) {
       const message = (err as AuthError).message || "Registration failed";
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Google Sign-In token received:", idToken);
       setError("Google Sign-In requires backend implementation");
       throw new Error(
-        "Google Sign-In requires setting up OAuth on Firebase console"
+        "Google Sign-In requires setting up OAuth on Firebase console",
       );
     } catch (err: any) {
       setError(err.message || "Google login failed");

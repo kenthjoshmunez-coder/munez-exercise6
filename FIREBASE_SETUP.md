@@ -91,13 +91,16 @@ npm start
 ## Common Issues
 
 ### Firebase not configured error
+
 Make sure you've filled in all the Firebase config values in `src/config/firebaseConfig.ts`
 
 ### Google Sign-In not working
+
 - Ensure your Web Client ID is correct
 - Add your redirect URL to Google Cloud Console authorized JavaScript origins
 - For web, add: `http://localhost:19000` (for Expo local testing)
 
 ### User profile not saving
+
 - Check that Firestore Database is created and enabled
 - Verify security rules allow your user's UID to write to `/users/{uid}` document
